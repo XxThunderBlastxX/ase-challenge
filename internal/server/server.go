@@ -5,16 +5,16 @@ import (
 	"github.com/xxthunderblastxx/ase-challenge/internal/config"
 )
 
-// Server struct holds the web-server configuration
-type Server struct {
+// App struct holds the web-server configuration
+type App struct {
 	*fiber.App
 
 	Appconfig *config.AppConfig
 }
 
 // New initializes and returns a new Server instance
-func New() *Server {
-	return &Server{
+func New() *App {
+	return &App{
 		App:       fiber.New(),
 		Appconfig: config.New(),
 	}
