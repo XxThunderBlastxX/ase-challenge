@@ -4,7 +4,7 @@ tmp_dir = "bin"
 
 [build]
   args_bin = []
-  bin = "bin/aese-challenge-backend"
+  bin = "bin/aes-challenge-backend"
   cmd = "make build-dev"
   delay = 100
   exclude_dir = ["tmp", "bin", "testdata", "node_modules"]
