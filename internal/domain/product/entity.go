@@ -6,7 +6,8 @@ import (
 
 type Product struct {
 	model.BaseModel
-	Name          string `json:"name" gorm:"not null"`
-	Description   string `json:"description"`
-	StockQuantity int    `json:"stock_quantity" gorm:"not null"`
+	Name             string `json:"name" gorm:"not null"`
+	Description      string `json:"description"`
+	StockQuantity    int    `json:"stock_quantity" gorm:"not null"`
+	LowStockThresold int    `json:"low_stock_threshold" gorm:"not null"`
 }

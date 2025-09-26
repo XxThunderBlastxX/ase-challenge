@@ -61,6 +61,19 @@ func (h *ProductHandler) GetAllProducts() fiber.Handler {
 			return errors.HandleError(c, err)
 		}
 
+		// Check for low-stock filter
+		lowStock := c.Query("low-stock")
+		if lowStock == "true" {
+			// Filter products with stock below their individual threshold
+			var lowStockProducts []product.Product
+			for _, p := range products {
+				if p.StockQuantity <= p.LowStockThresold {
+					lowStockProducts = append(lowStockProducts, p)
+				}
+			}
+			products = lowStockProducts
+		}
+
 		return errors.HandleSuccess(c, products)
 	}
 }

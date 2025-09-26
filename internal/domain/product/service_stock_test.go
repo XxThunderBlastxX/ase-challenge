@@ -109,9 +109,10 @@ func assertAppErrorCode(t *testing.T, err error, code apperrors.ErrorCode) {
 func TestService_IncermentStock(t *testing.T) {
 	repo := newMockRepo()
 	repo.products["p1"] = &Product{
-		Name:          "Widget",
-		Description:   "Test product",
-		StockQuantity: 10,
+		Name:             "Widget",
+		Description:      "Test product",
+		StockQuantity:    10,
+		LowStockThresold: 5,
 	}
 	svc := NewService(repo)
 
@@ -155,9 +156,10 @@ func TestService_IncermentStock(t *testing.T) {
 func TestService_DecrementStock(t *testing.T) {
 	repo := newMockRepo()
 	repo.products["p1"] = &Product{
-		Name:          "Widget",
-		Description:   "Test product",
-		StockQuantity: 10,
+		Name:             "Widget",
+		Description:      "Test product",
+		StockQuantity:    10,
+		LowStockThresold: 5,
 	}
 	svc := NewService(repo)
 
@@ -177,8 +179,9 @@ func TestService_DecrementStock(t *testing.T) {
 	t.Run("decrement to exact zero", func(t *testing.T) {
 		// Set to known stock
 		repo.products["p2"] = &Product{
-			Name:          "Gadget",
-			StockQuantity: 5,
+			Name:             "Gadget",
+			StockQuantity:    5,
+			LowStockThresold: 3,
 		}
 		err := svc.DecrementStock("p2", 5)
 		assertNoError(t, err)
