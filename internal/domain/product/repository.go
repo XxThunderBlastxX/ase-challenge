@@ -1,9 +1,9 @@
 package product
 
 type Repository interface {
-	Create(*Product) (Product, error)
+	Create(*Product) error
 	GetAll() ([]Product, error)
 	GetByID(string) (Product, error)
-	Update(string, *Product) (Product, error)
+	Update(string, *Product) error
 	Delete(string) error
 }
