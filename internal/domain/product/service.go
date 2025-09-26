@@ -1,11 +1,20 @@
 package product
 
+import (
+	"errors"
+
+	"gorm.io/gorm"
+)
+
 type Service interface {
 	CreateProduct(*Product) error
 	GetAllProducts() ([]Product, error)
 	GetProductByID(string) (*Product, error)
 	UpdateProduct(string, *Product) error
 	DeleteProduct(string) error
+
+	IncermentStock(id string, quantity int) error
+	DecrementStock(id string, quantity int) error
 }
 
 type service struct {
@@ -40,5 +49,43 @@ func (s *service) GetProductByID(id string) (*Product, error) {
 
 // UpdateProduct implements Service.
 func (s *service) UpdateProduct(id string, product *Product) error {
+	// Check if product exists
+	_, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("product not found")
+		}
+
+		return err
+	}
+
 	return s.repo.Update(id, product)
+}
+
+// IncermentStock implements Service.
+func (s *service) IncermentStock(id string, quantity int) error {
+	p, err := s.repo.GetByID(id)
+	if err != nil {
+		return err
+	}
+
+	p.StockQuantiy += quantity
+
+	return s.repo.Update(id, p)
+}
+
+// DecrementStock implements Service.
+func (s *service) DecrementStock(id string, quantity int) error {
+	p, err := s.repo.GetByID(id)
+	if err != nil {
+		return err
+	}
+
+	if p.StockQuantiy < quantity {
+		return errors.New("insufficient stock to decrement")
+	}
+
+	p.StockQuantiy -= quantity
+
+	return s.repo.Update(id, p)
 }

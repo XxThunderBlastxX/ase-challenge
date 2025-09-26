@@ -106,3 +106,57 @@ func (h *ProductHandler) DeleteProduct() fiber.Handler {
 		return c.SendStatus(fiber.StatusNoContent)
 	}
 }
+
+func (h *ProductHandler) IncrementProductStock() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id := c.Params("id")
+
+		var req struct {
+			stock_increment int `json:"stock_increment"`
+		}
+
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
+				Error: err.Error(),
+			})
+		}
+
+		err := h.service.IncermentStock(id, req.stock_increment)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse{
+				Error: err.Error(),
+			})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(response.SuccessResponse{
+			Data: "Stock incremented successfully",
+		})
+
+	}
+}
+
+func (h *ProductHandler) DecrementProductStock() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id := c.Params("id")
+
+		var req struct {
+			stock_decrement int `json:"stock_decrement"`
+		}
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
+				Error: err.Error(),
+			})
+		}
+
+		err := h.service.DecrementStock(id, req.stock_decrement)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse{
+				Error: err.Error(),
+			})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(response.SuccessResponse{
+			Data: "Stock decremented successfully",
+		})
+	}
+}
