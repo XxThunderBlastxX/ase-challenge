@@ -123,7 +123,7 @@ func (s *service) UpdateProduct(id string, product *Product) error {
 		return apperrors.NewDatabaseError("failed to check product existence: " + err.Error())
 	}
 
-	err = s.repo.Update(id, product)
+	err = s.repo.UpdateAllColumn(id, product)
 	if err != nil {
 		return apperrors.NewDatabaseError("failed to update product: " + err.Error())
 	}
@@ -151,7 +151,7 @@ func (s *service) IncermentStock(id string, quantity int) error {
 
 	p.StockQuantity += quantity
 
-	err = s.repo.Update(id, p)
+	err = s.repo.UpdateSingleColumn(id, "stock_quantity", p.StockQuantity)
 	if err != nil {
 		return apperrors.NewDatabaseError("failed to update product stock: " + err.Error())
 	}
@@ -183,7 +183,7 @@ func (s *service) DecrementStock(id string, quantity int) error {
 
 	p.StockQuantity -= quantity
 
-	err = s.repo.Update(id, p)
+	err = s.repo.UpdateSingleColumn(id, "stock_quantity", p.StockQuantity)
 	if err != nil {
 		return apperrors.NewDatabaseError("failed to update product stock: " + err.Error())
 	}

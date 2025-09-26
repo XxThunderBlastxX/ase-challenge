@@ -54,9 +54,21 @@ func (r *productRepository) GetByID(id string) (*product.Product, error) {
 	return &p, nil
 }
 
-// Update implements product.Repository.
-func (r *productRepository) Update(id string, product *product.Product) error {
+// UpdateAllColumn implements product.Repository.
+func (r *productRepository) UpdateAllColumn(id string, product *product.Product) error {
 	if err := r.conn.DB.Updates(product).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *productRepository) UpdateSingleColumn(id string, column string, value any) error {
+	if err := r.conn.DB.
+		Model(&product.Product{}).
+		Where("id = ?", id).
+		Update(column, value).
+		Error; err != nil {
 		return err
 	}
 
