@@ -107,7 +107,7 @@ func (h *ProductHandler) DeleteProduct() fiber.Handler {
 	}
 }
 
-func (h *ProductHandler) IncrementProductStock() fiber.Handler {
+func (h *ProductHandler) IncrementStock() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("id")
 
@@ -135,7 +135,7 @@ func (h *ProductHandler) IncrementProductStock() fiber.Handler {
 	}
 }
 
-func (h *ProductHandler) DecrementProductStock() fiber.Handler {
+func (h *ProductHandler) DecrementStock() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("id")
 

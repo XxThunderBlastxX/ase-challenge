@@ -20,5 +20,8 @@ func (r *Router) productRouter(grp fiber.Router) {
 		pgrp.Get("/:id", h.GetProductByID())
 		pgrp.Put("/:id", h.UpdateProduct())
 		pgrp.Delete("/:id", h.DeleteProduct())
+
+		pgrp.Post("/:id/increment-stock", h.IncrementStock())
+		pgrp.Post("/:id/decrement-stock", h.DecrementStock())
 	}
 }
