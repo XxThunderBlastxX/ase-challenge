@@ -44,12 +44,14 @@ func (r *productRepository) GetAll() ([]product.Product, error) {
 }
 
 // GetByID implements product.Repository.
-func (r *productRepository) GetByID(id string) (product.Product, error) {
-	if err := r.conn.DB.First(&product.Product{}, "id = ?", id).Error; err != nil {
-		return product.Product{}, err
+func (r *productRepository) GetByID(id string) (*product.Product, error) {
+	var p product.Product
+
+	if err := r.conn.DB.First(&p, "id = ?", id).Error; err != nil {
+		return nil, err
 	}
 
-	return product.Product{}, nil
+	return &p, nil
 }
 
 // Update implements product.Repository.

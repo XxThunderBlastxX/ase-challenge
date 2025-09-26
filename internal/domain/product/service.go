@@ -20,25 +20,25 @@ func NewService(repo Repository) Service {
 
 // CreateProduct implements Service.
 func (s *service) CreateProduct(product *Product) error {
-	panic("unimplemented")
+	return s.repo.Create(product)
 }
 
 // DeleteProduct implements Service.
 func (s *service) DeleteProduct(id string) error {
-	panic("unimplemented")
+	return s.repo.Delete(id)
 }
 
 // GetAllProducts implements Service.
 func (s *service) GetAllProducts() ([]Product, error) {
-	panic("unimplemented")
+	return s.repo.GetAll()
 }
 
 // GetProductByID implements Service.
 func (s *service) GetProductByID(id string) (*Product, error) {
-	panic("unimplemented")
+	return s.repo.GetByID(id)
 }
 
 // UpdateProduct implements Service.
 func (s *service) UpdateProduct(id string, product *Product) error {
-	panic("unimplemented")
+	return s.repo.Update(id, product)
 }
