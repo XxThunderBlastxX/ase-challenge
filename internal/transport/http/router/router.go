@@ -3,6 +3,8 @@ package router
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/watchakorn-18k/scalar-go"
 	"github.com/xxthunderblastxx/ase-challenge/internal/server"
 	"github.com/xxthunderblastxx/ase-challenge/internal/transport/http/handlers"
 )
@@ -18,8 +20,26 @@ func NewRouter(s *server.App) *Router {
 }
 
 func (r *Router) RegisterRoutes() {
-	// CORS middleware
+	// Middleware
 	r.app.Use(cors.New())
+	r.app.Use(recover.New())
+
+	// API Documentation route
+	r.app.Use("/docs", func(c *fiber.Ctx) error {
+		htmlContent, err := scalar.ApiReferenceHTML(&scalar.Options{
+			SpecURL: "./docs/swagger.yaml",
+			CustomOptions: scalar.CustomOptions{
+				PageTitle: "Product Inventory Management API Docs",
+			},
+			DarkMode: true,
+		})
+
+		if err != nil {
+			return err
+		}
+		c.Type("html")
+		return c.SendString(htmlContent)
+	})
 
 	// Base Group
 	g := r.app.Group("/api/v1")
