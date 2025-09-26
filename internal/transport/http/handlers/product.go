@@ -3,7 +3,7 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/xxthunderblastxx/ase-challenge/internal/domain/product"
-	"github.com/xxthunderblastxx/ase-challenge/internal/pkg/response"
+	"github.com/xxthunderblastxx/ase-challenge/internal/pkg/errors"
 )
 
 type ProductHandler struct {
@@ -19,22 +19,18 @@ func NewProductHandler(s product.Service) *ProductHandler {
 func (h *ProductHandler) CreateProduct() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var p product.Product
+
+		// Parse request body
 		if err := c.BodyParser(&p); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
-				Error: err.Error(),
-			})
-
+			return errors.HandleError(c, errors.NewInvalidInputError("invalid request body format: "+err.Error()))
 		}
 
+		// Call service layer
 		if err := h.service.CreateProduct(&p); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse{
-				Error: err.Error(),
-			})
+			return errors.HandleError(c, err)
 		}
 
-		return c.Status(fiber.StatusCreated).JSON(response.SuccessResponse{
-			Data: p,
-		})
+		return errors.HandleCreatedSuccess(c, p)
 	}
 }
 
@@ -42,31 +38,30 @@ func (h *ProductHandler) GetProductByID() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("id")
 
-		p, err := h.service.GetProductByID(id)
-		if err != nil {
-			return c.Status(fiber.StatusNotFound).JSON(response.ErrorResponse{
-				Error: "Product not found",
-			})
+		// Validate ID parameter
+		if id == "" {
+			return errors.HandleError(c, errors.NewMissingRequiredDataError("id"))
 		}
 
-		return c.Status(fiber.StatusOK).JSON(response.SuccessResponse{
-			Data: p,
-		})
+		// Call service layer
+		p, err := h.service.GetProductByID(id)
+		if err != nil {
+			return errors.HandleError(c, err)
+		}
+
+		return errors.HandleSuccess(c, p)
 	}
 }
 
 func (h *ProductHandler) GetAllProducts() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// Call service layer
 		products, err := h.service.GetAllProducts()
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse{
-				Error: err.Error(),
-			})
+			return errors.HandleError(c, err)
 		}
 
-		return c.Status(fiber.StatusOK).JSON(response.SuccessResponse{
-			Data: products,
-		})
+		return errors.HandleSuccess(c, products)
 	}
 }
 
@@ -74,22 +69,30 @@ func (h *ProductHandler) UpdateProduct() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("id")
 
+		// Validate ID parameter
+		if id == "" {
+			return errors.HandleError(c, errors.NewMissingRequiredDataError("id"))
+		}
+
 		var p product.Product
+
+		// Parse request body
 		if err := c.BodyParser(&p); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
-				Error: err.Error(),
-			})
+			return errors.HandleError(c, errors.NewInvalidInputError("invalid request body format: "+err.Error()))
 		}
 
+		// Call service layer
 		if err := h.service.UpdateProduct(id, &p); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse{
-				Error: err.Error(),
-			})
+			return errors.HandleError(c, err)
 		}
 
-		return c.Status(fiber.StatusOK).JSON(response.SuccessResponse{
-			Data: p,
-		})
+		// Get updated product to return
+		updatedProduct, err := h.service.GetProductByID(id)
+		if err != nil {
+			return errors.HandleError(c, err)
+		}
+
+		return errors.HandleSuccess(c, updatedProduct)
 	}
 }
 
@@ -97,13 +100,17 @@ func (h *ProductHandler) DeleteProduct() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("id")
 
-		if err := h.service.DeleteProduct(id); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse{
-				Error: err.Error(),
-			})
+		// Validate ID parameter
+		if id == "" {
+			return errors.HandleError(c, errors.NewMissingRequiredDataError("id"))
 		}
 
-		return c.SendStatus(fiber.StatusNoContent)
+		// Call service layer
+		if err := h.service.DeleteProduct(id); err != nil {
+			return errors.HandleError(c, err)
+		}
+
+		return errors.HandleNoContent(c)
 	}
 }
 
@@ -111,27 +118,42 @@ func (h *ProductHandler) IncrementStock() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("id")
 
+		// Validate ID parameter
+		if id == "" {
+			return errors.HandleError(c, errors.NewMissingRequiredDataError("id"))
+		}
+
 		var req struct {
-			stock_increment int `json:"stock_increment"`
+			StockIncrement int `json:"stock_increment" validate:"required,min=1"`
 		}
 
+		// Parse request body
 		if err := c.BodyParser(&req); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
-				Error: err.Error(),
-			})
+			return errors.HandleError(c, errors.NewInvalidInputError("invalid request body format: "+err.Error()))
 		}
 
-		err := h.service.IncermentStock(id, req.stock_increment)
+		// Validate increment value
+		if req.StockIncrement <= 0 {
+			return errors.HandleError(c, errors.NewInvalidInputError("stock_increment must be greater than 0"))
+		}
+
+		// Call service layer
+		err := h.service.IncermentStock(id, req.StockIncrement)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse{
-				Error: err.Error(),
-			})
+			return errors.HandleError(c, err)
 		}
 
-		return c.Status(fiber.StatusOK).JSON(response.SuccessResponse{
-			Data: "Stock incremented successfully",
-		})
+		// Get updated product to return current stock
+		updatedProduct, err := h.service.GetProductByID(id)
+		if err != nil {
+			return errors.HandleError(c, err)
+		}
 
+		return errors.HandleSuccess(c, map[string]any{
+			"message":          "Stock incremented successfully",
+			"product":          updatedProduct,
+			"increment_amount": req.StockIncrement,
+		})
 	}
 }
 
@@ -139,24 +161,41 @@ func (h *ProductHandler) DecrementStock() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("id")
 
+		// Validate ID parameter
+		if id == "" {
+			return errors.HandleError(c, errors.NewMissingRequiredDataError("id"))
+		}
+
 		var req struct {
-			stock_decrement int `json:"stock_decrement"`
+			StockDecrement int `json:"stock_decrement" validate:"required,min=1"`
 		}
+
+		// Parse request body
 		if err := c.BodyParser(&req); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
-				Error: err.Error(),
-			})
+			return errors.HandleError(c, errors.NewInvalidInputError("invalid request body format: "+err.Error()))
 		}
 
-		err := h.service.DecrementStock(id, req.stock_decrement)
+		// Validate decrement value
+		if req.StockDecrement <= 0 {
+			return errors.HandleError(c, errors.NewInvalidInputError("stock_decrement must be greater than 0"))
+		}
+
+		// Call service layer
+		err := h.service.DecrementStock(id, req.StockDecrement)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse{
-				Error: err.Error(),
-			})
+			return errors.HandleError(c, err)
 		}
 
-		return c.Status(fiber.StatusOK).JSON(response.SuccessResponse{
-			Data: "Stock decremented successfully",
+		// Get updated product to return current stock
+		updatedProduct, err := h.service.GetProductByID(id)
+		if err != nil {
+			return errors.HandleError(c, err)
+		}
+
+		return errors.HandleSuccess(c, map[string]any{
+			"message":          "Stock decremented successfully",
+			"product":          updatedProduct,
+			"decrement_amount": req.StockDecrement,
 		})
 	}
 }

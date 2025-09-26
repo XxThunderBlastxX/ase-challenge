@@ -1,11 +1,12 @@
 package product
 
-import "gorm.io/gorm"
+import (
+	"github.com/xxthunderblastxx/ase-challenge/internal/pkg/model"
+)
 
 type Product struct {
-	gorm.Model
-	ID           string `json:"id" gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
-	Name         string `json:"name" gorm:"not null"`
-	Description  string `json:"description"`
-	StockQuantiy int    `json:"stock_quantity" gorm:"not null"`
+	model.BaseModel
+	Name          string `json:"name" gorm:"not null"`
+	Description   string `json:"description"`
+	StockQuantity int    `json:"stock_quantity" gorm:"not null"`
 }

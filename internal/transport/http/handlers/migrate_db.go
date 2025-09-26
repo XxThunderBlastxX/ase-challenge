@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/xxthunderblastxx/ase-challenge/internal/domain/product"
 	"github.com/xxthunderblastxx/ase-challenge/internal/infrastructure/postgres"
-	"github.com/xxthunderblastxx/ase-challenge/internal/pkg/response"
+	"github.com/xxthunderblastxx/ase-challenge/internal/pkg/errors"
 )
 
 type MigrateDBHandler struct {
@@ -19,14 +19,21 @@ func NewMigrateDBHandler(conn *postgres.ConnectionManager) *MigrateDBHandler {
 
 func (h *MigrateDBHandler) MigrateDB() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		if err := h.conn.DB.AutoMigrate(product.Product{}); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(response.ErrorResponse{
-				Error: err.Error(),
-			})
+		// Validate connection manager
+		if h.conn == nil {
+			return errors.HandleError(c, errors.NewConnectionError("database connection manager is not initialized"))
 		}
 
-		return c.Status(fiber.StatusOK).JSON(response.SuccessResponse{
-			Data: "Database migrated successfully!!",
-		})
+		// Validate database connection
+		if h.conn.DB == nil {
+			return errors.HandleError(c, errors.NewConnectionError("database connection is not established"))
+		}
+
+		// Perform migration
+		if err := h.conn.DB.AutoMigrate(product.Product{}); err != nil {
+			return errors.HandleError(c, errors.NewMigrationError("failed to migrate database: "+err.Error()))
+		}
+
+		return errors.HandleSuccess(c, "Database migrated successfully", fiber.StatusOK)
 	}
 }

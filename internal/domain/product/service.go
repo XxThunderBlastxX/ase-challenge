@@ -3,6 +3,7 @@ package product
 import (
 	"errors"
 
+	apperrors "github.com/xxthunderblastxx/ase-challenge/internal/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -29,63 +30,163 @@ func NewService(repo Repository) Service {
 
 // CreateProduct implements Service.
 func (s *service) CreateProduct(product *Product) error {
-	return s.repo.Create(product)
+	// Validate required fields
+	if product.Name == "" {
+		return apperrors.NewMissingRequiredDataError("name")
+	}
+
+	if product.StockQuantity < 0 {
+		return apperrors.NewInvalidInputError("stock quantity cannot be negative")
+	}
+
+	err := s.repo.Create(product)
+	if err != nil {
+		// Handle duplicate entry errors (if name should be unique)
+		// This depends on your database constraints
+		return apperrors.NewDatabaseError("failed to create product: " + err.Error())
+	}
+
+	return nil
 }
 
 // DeleteProduct implements Service.
 func (s *service) DeleteProduct(id string) error {
-	return s.repo.Delete(id)
+	if id == "" {
+		return apperrors.NewMissingRequiredDataError("id")
+	}
+
+	// Check if product exists first
+	_, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return apperrors.NewProductNotFoundError(id)
+		}
+		return apperrors.NewDatabaseError("failed to check product existence: " + err.Error())
+	}
+
+	err = s.repo.Delete(id)
+	if err != nil {
+		return apperrors.NewDatabaseError("failed to delete product: " + err.Error())
+	}
+
+	return nil
 }
 
 // GetAllProducts implements Service.
 func (s *service) GetAllProducts() ([]Product, error) {
-	return s.repo.GetAll()
+	products, err := s.repo.GetAll()
+	if err != nil {
+		return nil, apperrors.NewDatabaseError("failed to retrieve products: " + err.Error())
+	}
+
+	return products, nil
 }
 
 // GetProductByID implements Service.
 func (s *service) GetProductByID(id string) (*Product, error) {
-	return s.repo.GetByID(id)
+	if id == "" {
+		return nil, apperrors.NewMissingRequiredDataError("id")
+	}
+
+	product, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperrors.NewProductNotFoundError(id)
+		}
+		return nil, apperrors.NewDatabaseError("failed to retrieve product: " + err.Error())
+	}
+
+	return product, nil
 }
 
 // UpdateProduct implements Service.
 func (s *service) UpdateProduct(id string, product *Product) error {
+	if id == "" {
+		return apperrors.NewMissingRequiredDataError("id")
+	}
+
+	// Validate required fields
+	if product.Name == "" {
+		return apperrors.NewMissingRequiredDataError("name")
+	}
+
+	if product.StockQuantity < 0 {
+		return apperrors.NewInvalidInputError("stock quantity cannot be negative")
+	}
+
 	// Check if product exists
 	_, err := s.repo.GetByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("product not found")
+			return apperrors.NewProductNotFoundError(id)
 		}
-
-		return err
+		return apperrors.NewDatabaseError("failed to check product existence: " + err.Error())
 	}
 
-	return s.repo.Update(id, product)
+	err = s.repo.Update(id, product)
+	if err != nil {
+		return apperrors.NewDatabaseError("failed to update product: " + err.Error())
+	}
+
+	return nil
 }
 
-// IncermentStock implements Service.
+// IncrementStock implements Service.
 func (s *service) IncermentStock(id string, quantity int) error {
-	p, err := s.repo.GetByID(id)
-	if err != nil {
-		return err
+	if id == "" {
+		return apperrors.NewMissingRequiredDataError("id")
 	}
 
-	p.StockQuantiy += quantity
+	if quantity <= 0 {
+		return apperrors.NewInvalidInputError("increment quantity must be greater than 0")
+	}
 
-	return s.repo.Update(id, p)
+	p, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return apperrors.NewProductNotFoundError(id)
+		}
+		return apperrors.NewDatabaseError("failed to retrieve product: " + err.Error())
+	}
+
+	p.StockQuantity += quantity
+
+	err = s.repo.Update(id, p)
+	if err != nil {
+		return apperrors.NewDatabaseError("failed to update product stock: " + err.Error())
+	}
+
+	return nil
 }
 
 // DecrementStock implements Service.
 func (s *service) DecrementStock(id string, quantity int) error {
+	if id == "" {
+		return apperrors.NewMissingRequiredDataError("id")
+	}
+
+	if quantity <= 0 {
+		return apperrors.NewInvalidInputError("decrement quantity must be greater than 0")
+	}
+
 	p, err := s.repo.GetByID(id)
 	if err != nil {
-		return err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return apperrors.NewProductNotFoundError(id)
+		}
+		return apperrors.NewDatabaseError("failed to retrieve product: " + err.Error())
 	}
 
-	if p.StockQuantiy < quantity {
-		return errors.New("insufficient stock to decrement")
+	if p.StockQuantity < quantity {
+		return apperrors.NewInsufficientStockError(p.StockQuantity, quantity)
 	}
 
-	p.StockQuantiy -= quantity
+	p.StockQuantity -= quantity
 
-	return s.repo.Update(id, p)
+	err = s.repo.Update(id, p)
+	if err != nil {
+		return apperrors.NewDatabaseError("failed to update product stock: " + err.Error())
+	}
+
+	return nil
 }

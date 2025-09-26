@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/xxthunderblastxx/ase-challenge/internal/config"
 	"github.com/xxthunderblastxx/ase-challenge/internal/infrastructure/postgres"
+	"github.com/xxthunderblastxx/ase-challenge/internal/pkg/errors"
 )
 
 // App struct holds the web-server configuration
@@ -21,7 +22,9 @@ func New() *App {
 	pConn := postgres.MustConnect(&cfg.PostgresConfig)
 
 	return &App{
-		App:          fiber.New(),
+		App: fiber.New(fiber.Config{
+			ErrorHandler: errors.ErrorHandler(),
+		}),
 		Appconfig:    config.New(),
 		PostgresConn: pConn,
 	}
