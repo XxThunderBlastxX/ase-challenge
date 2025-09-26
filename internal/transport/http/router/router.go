@@ -19,5 +19,9 @@ func (r *Router) RegisterRoutes() {
 	// CORS middleware
 	r.app.Use(cors.New())
 
+	// Base Group
+	g := r.app.Group("/api/v1")
+
 	// Register other routes here
+	r.productRouter(g)
 }
